@@ -231,6 +231,7 @@ static void timer_callback_2(void *context) {
     struct tm * tick_time = localtime(&now);
     time_as_words(tick_time->tm_hour, tick_time->tm_min, current_hour, current_tens, current_ones);
     
+    light_enable_interaction();
     animation_out_in();
 }
 
@@ -245,6 +246,7 @@ static void timer_callback_1(void *context) {
     strcpy(current_tens, strcmp(current_ones, "data ")==0 ? "weathr" : "&");
     
     animation_out_in();
+    light_enable_interaction();
     
     timer_handle = app_timer_register(WAIT_TIME + STAGGER_STR*2, timer_callback_2, NULL);
 }
@@ -261,6 +263,7 @@ static void timer_callback_0(void *context) {
     //    strcpy(current_ones, temp_str);
   
     animation_out_in();
+    light_enable_interaction();
   
     timer_handle = app_timer_register(WAIT_TIME + STAGGER_STR*2, timer_callback_1, NULL); 
 }

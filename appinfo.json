@@ -10,7 +10,7 @@
         "configurable"
     ],
     "companyName": "First+Third",
-    "longName": "Text v3",
+    "longName": "Text Enhanced",
     "projectType": "native",
     "resources": {
         "media": [
@@ -52,7 +52,7 @@
             }
         ]
     },
-    "shortName": "Text v3",
+    "shortName": "Text Enhanced",
     "uuid": "ac0d6642-55b8-4f60-8166-bdae3b91c748",
     "versionCode": 1,
     "versionLabel": "2.0",
