@@ -35,7 +35,7 @@ static Window *window;
 static TextLayer *hour_layer;
 static TextLayer *tens_layer;
 static TextLayer *ones_layer;
-//static TextLayer *connection_layer;
+static TextLayer *connection_layer;
 static char current_hour[] = "eleven";
 static char current_tens[] = "thirteen";
 static char previous_tens[] = "thirteen";
@@ -52,6 +52,9 @@ static char temp_str[] = "clock";
 static char temp_f_str[] = "clock";
 static char temp_c_str[] = "clock";
 static char city_str[] = "1234";
+static char connected_str[] = "";
+static char disconnected_str[] = "Disconnected";
+
 #define STAGGER_STR 100
 #define STAGGER_IN 500
 #define WAIT_TIME 2500
@@ -63,7 +66,7 @@ static GRect r_rect_ones = ConstantGRect(168, 90, 144, 168 - 90);
 static GRect c_rect_hour = ConstantGRect(0, 20, 144, 168 - 20);
 static GRect c_rect_tens = ConstantGRect(0, 55, 144, 168 - 55);
 static GRect c_rect_ones = ConstantGRect(0, 90, 144, 168 - 90);
-//static GRect c_rect_connection = ConstantGRect(0, 110, 144, 168 - 110);
+static GRect c_rect_connection = ConstantGRect(0, 150, 144, 168 - 150);
 static GRect l_rect_hour = ConstantGRect(-168, 20, 144, 168 - 20);
 static GRect l_rect_tens = ConstantGRect(-168, 55, 144, 168 - 55);
 static GRect l_rect_ones = ConstantGRect(-168, 90, 144, 168 - 90);
@@ -205,6 +208,14 @@ static void handle_tick(struct tm *tick_time, TimeUnits units_changed) {
     }
 }
 
+void bluetooth_connection_callback(bool connected) {
+  if (connected) {
+    text_layer_set_text(connection_layer, connected_str);
+  } else {
+    text_layer_set_text(connection_layer, disconnected_str);
+  }
+}
+
 //static void timer_callback(void *context) {
 //    time_t now = time(NULL);
 //    struct tm * tick_time = localtime(&now);
@@ -309,23 +320,23 @@ static void window_load(Window *window) {
     hour_layer = text_layer_create(r_rect_hour);
     tens_layer = text_layer_create(r_rect_tens);
     ones_layer = text_layer_create(r_rect_ones);
-    //connection_layer = text_layer_create(c_rect_connection);
+    connection_layer = text_layer_create(c_rect_connection);
     text_layer_set_font(hour_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
     text_layer_set_font(tens_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT));
     text_layer_set_font(ones_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT));
-    //text_layer_set_font(connection_layer, fonts_get_system_font(FONT_KEY_BITHAM_18_LIGHT_SUBSET));
+    text_layer_set_font(connection_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
     text_layer_set_text_color(hour_layer, GColorWhite);
     text_layer_set_text_color(tens_layer, GColorWhite);
     text_layer_set_text_color(ones_layer, GColorWhite);
-    //text_layer_set_text_color(connection_layer, GColorWhite);
+    text_layer_set_text_color(connection_layer, GColorWhite);
     text_layer_set_background_color(hour_layer, GColorClear);
     text_layer_set_background_color(tens_layer, GColorClear);
     text_layer_set_background_color(ones_layer, GColorClear);
-    //text_layer_set_background_color(connection_layer, GColorClear);
+    text_layer_set_background_color(connection_layer, GColorClear);
     layer_add_child(window_layer, text_layer_get_layer(hour_layer));
     layer_add_child(window_layer, text_layer_get_layer(tens_layer));
     layer_add_child(window_layer, text_layer_get_layer(ones_layer));
-    //layer_add_child(window_layer, text_layer_get_layer(connection_layer));
+    layer_add_child(window_layer, text_layer_get_layer(connection_layer));
     
     // prepare the initial values of your data
     Tuplet initial_values[] = {
@@ -339,6 +350,8 @@ static void window_load(Window *window) {
     app_sync_init(&sync, sync_buffer, sizeof(sync_buffer), initial_values, ARRAY_LENGTH(initial_values),
         sync_tuple_changed_callback, sync_error_callback, NULL);
     //send_cmd();
+  
+    bluetooth_connection_service_subscribe(bluetooth_connection_callback);
 }
 
 static void window_unload(Window *window) {
@@ -346,7 +359,7 @@ static void window_unload(Window *window) {
     text_layer_destroy(hour_layer);
     text_layer_destroy(tens_layer);
     text_layer_destroy(ones_layer);
-    //text_layer_destroy(connection_layer);
+    text_layer_destroy(connection_layer);
 }
 
 static void init(void) {
