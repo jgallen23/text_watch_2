@@ -28,12 +28,14 @@
 
 #include <pebble.h>
 #include "time_as_words.h"
+#include "battbar.h"
 #include <ctype.h> // for tolower()
 
 static Window *window;
 static TextLayer *hour_layer;
 static TextLayer *tens_layer;
 static TextLayer *ones_layer;
+//static TextLayer *connection_layer;
 static char current_hour[] = "eleven";
 static char current_tens[] = "thirteen";
 static char previous_tens[] = "thirteen";
@@ -52,7 +54,7 @@ static char temp_c_str[] = "clock";
 static char city_str[] = "1234";
 #define STAGGER_STR 100
 #define STAGGER_IN 500
-#define WAIT_TIME 1500
+#define WAIT_TIME 2500
 #define ConstantGRect(x, y, w, h) {{(x), (y)}, {(w), (h)}}  // borrowed from drop_zone
 // hour, tens, ones frames off screen to the right, center (default), left
 static GRect r_rect_hour = ConstantGRect(168, 20, 144, 168 - 20);
@@ -61,6 +63,7 @@ static GRect r_rect_ones = ConstantGRect(168, 90, 144, 168 - 90);
 static GRect c_rect_hour = ConstantGRect(0, 20, 144, 168 - 20);
 static GRect c_rect_tens = ConstantGRect(0, 55, 144, 168 - 55);
 static GRect c_rect_ones = ConstantGRect(0, 90, 144, 168 - 90);
+//static GRect c_rect_connection = ConstantGRect(0, 110, 144, 168 - 110);
 static GRect l_rect_hour = ConstantGRect(-168, 20, 144, 168 - 20);
 static GRect l_rect_tens = ConstantGRect(-168, 55, 144, 168 - 55);
 static GRect l_rect_ones = ConstantGRect(-168, 90, 144, 168 - 90);
@@ -235,23 +238,27 @@ static void timer_callback_1(void *context) {
     timer_handle = app_timer_register(WAIT_TIME + STAGGER_STR*2, timer_callback_2, NULL);
 }
 
+static void timer_callback_0(void *context) {
+    strcpy(current_hour, day_str);
+    strcpy(current_tens, mon_str);
+    strcpy(current_ones, date_str);
+    //    strcpy(current_hour, weather_str);
+    //    strcpy(current_tens, temp_str);
+    //    strcpy(current_ones, city_str);
+    //    strcpy(current_hour, weather_str);
+    //    strcpy(current_tens, center_str);
+    //    strcpy(current_ones, temp_str);
+  
+    animation_out_in();
+  
+    timer_handle = app_timer_register(WAIT_TIME + STAGGER_STR*2, timer_callback_1, NULL); 
+}
+
 static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
     if (!noInterrupts) { // prevent calling accel_tap_handler multiple times mid-animation
         noInterrupts = true;
         
-        strcpy(current_hour, day_str);
-        strcpy(current_tens, mon_str);
-        strcpy(current_ones, date_str);
-        //    strcpy(current_hour, weather_str);
-        //    strcpy(current_tens, temp_str);
-        //    strcpy(current_ones, city_str);
-        //    strcpy(current_hour, weather_str);
-        //    strcpy(current_tens, center_str);
-        //    strcpy(current_ones, temp_str);
-        
-        animation_out_in();
-        
-        timer_handle = app_timer_register(WAIT_TIME + STAGGER_STR*2, timer_callback_1, NULL);
+        timer_handle = app_timer_register(500 + STAGGER_STR*2, timer_callback_0, NULL); 
     }
 }
 
@@ -302,18 +309,23 @@ static void window_load(Window *window) {
     hour_layer = text_layer_create(r_rect_hour);
     tens_layer = text_layer_create(r_rect_tens);
     ones_layer = text_layer_create(r_rect_ones);
+    //connection_layer = text_layer_create(c_rect_connection);
     text_layer_set_font(hour_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
     text_layer_set_font(tens_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT));
     text_layer_set_font(ones_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT));
+    //text_layer_set_font(connection_layer, fonts_get_system_font(FONT_KEY_BITHAM_18_LIGHT_SUBSET));
     text_layer_set_text_color(hour_layer, GColorWhite);
     text_layer_set_text_color(tens_layer, GColorWhite);
     text_layer_set_text_color(ones_layer, GColorWhite);
+    //text_layer_set_text_color(connection_layer, GColorWhite);
     text_layer_set_background_color(hour_layer, GColorClear);
     text_layer_set_background_color(tens_layer, GColorClear);
     text_layer_set_background_color(ones_layer, GColorClear);
+    //text_layer_set_background_color(connection_layer, GColorClear);
     layer_add_child(window_layer, text_layer_get_layer(hour_layer));
     layer_add_child(window_layer, text_layer_get_layer(tens_layer));
     layer_add_child(window_layer, text_layer_get_layer(ones_layer));
+    //layer_add_child(window_layer, text_layer_get_layer(connection_layer));
     
     // prepare the initial values of your data
     Tuplet initial_values[] = {
@@ -334,6 +346,7 @@ static void window_unload(Window *window) {
     text_layer_destroy(hour_layer);
     text_layer_destroy(tens_layer);
     text_layer_destroy(ones_layer);
+    //text_layer_destroy(connection_layer);
 }
 
 static void init(void) {
@@ -353,6 +366,18 @@ static void init(void) {
     
     tick_timer_service_subscribe(MINUTE_UNIT, &handle_tick);
     accel_tap_service_subscribe(&accel_tap_handler);
+  
+    Layer *window_layer = window_get_root_layer(window);
+    GRect bounds = layer_get_frame(window_layer);
+  
+    BBOptions options; /* Step 6 */
+    options.position = BATTBAR_POSITION_TOP;
+    options.direction = BATTBAR_DIRECTION_DOWN;
+    options.color = BATTBAR_COLOR_WHITE;
+    options.isWatchApp = true;
+  
+    SetupBattBar(options, window_layer); /* Step 7 */
+    DrawBattBar(); /* Step 8 */
 }
 
 static void deinit(void) {
